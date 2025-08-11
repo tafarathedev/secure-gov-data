@@ -14,11 +14,13 @@ interface NavigationTabsProps {
     requests: React.ReactNode;
     audit: React.ReactNode;
   };
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export const NavigationTabs = ({ children }: NavigationTabsProps) => {
+export const NavigationTabs = ({ children, activeTab = "dashboard", onTabChange }: NavigationTabsProps) => {
   return (
-    <Tabs defaultValue="dashboard" className="w-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-3 mb-6">
         <TabsTrigger value="dashboard" className="flex items-center space-x-2">
           <LayoutDashboard className="h-4 w-4" />

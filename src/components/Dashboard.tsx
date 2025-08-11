@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+interface DashboardProps {
+  onNewRequest?: () => void;
+}
+
 interface DashboardStats {
   totalRequests: number;
   pendingRequests: number;
@@ -74,7 +78,7 @@ const mockRequests: DataRequest[] = [
   }
 ];
 
-export const Dashboard = () => {
+export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'warning';
@@ -160,10 +164,7 @@ export const Dashboard = () => {
             </div>
             <Button 
               className="bg-gradient-to-r from-primary to-primary-hover"
-              onClick={() => {
-                // Navigate to data request form or open modal
-                console.log("Opening new request form");
-              }}
+              onClick={onNewRequest}
             >
               <Plus className="mr-2 h-4 w-4" />
               New Request

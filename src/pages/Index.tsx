@@ -15,6 +15,7 @@ interface User {
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const handleLogin = (ministry: string, role: string, username: string) => {
     setUser({ ministry, role, username });
@@ -39,9 +40,9 @@ const Index = () => {
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <NavigationTabs>
+        <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab}>
           {{
-            dashboard: <Dashboard />,
+            dashboard: <Dashboard onNewRequest={() => setActiveTab("requests")} />,
             requests: (
               <DataRequestForm 
                 currentMinistry={user?.ministry || ""}

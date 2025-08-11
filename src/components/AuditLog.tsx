@@ -93,6 +93,24 @@ const mockAuditData: AuditEntry[] = [
 ];
 
 export const AuditLog = () => {
+  const exportAuditLogs = () => {
+    const csvContent = [
+      "ID,Timestamp,User,Ministry,Action,Resource,Status,IP Address,Risk Level,Details",
+      ...mockAuditData.map(entry => 
+        `"${entry.id}","${entry.timestamp}","${entry.user}","${entry.ministry}","${entry.action}","${entry.resource}","${entry.status}","${entry.ipAddress}","${entry.riskLevel}","${entry.details}"`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'login': return <UserCheck className="h-4 w-4" />;
@@ -135,10 +153,7 @@ export const AuditLog = () => {
         </div>
         <Button 
           className="bg-gradient-to-r from-primary to-primary-hover"
-          onClick={() => {
-            // Export audit logs as CSV/Excel
-            console.log("Exporting audit logs");
-          }}
+          onClick={exportAuditLogs}
         >
           <Download className="mr-2 h-4 w-4" />
           Export Logs
