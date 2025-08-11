@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import { AuditDetailsModal } from "./AuditDetailsModal";
 
 interface AuditEntry {
   id: string;
@@ -93,6 +95,32 @@ const mockAuditData: AuditEntry[] = [
 ];
 
 export const AuditLog = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionFilter, setActionFilter] = useState("all-actions");
+  const [ministryFilter, setMinistryFilter] = useState("all-ministries");
+  const [riskFilter, setRiskFilter] = useState("all-risk");
+  const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  const handleViewDetails = (entry: AuditEntry) => {
+    setSelectedEntry(entry);
+    setIsDetailsModalOpen(true);
+  };
+
+  const filteredAuditData = mockAuditData.filter(entry => {
+    const matchesSearch = entry.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         entry.ministry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         entry.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         entry.details.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesAction = actionFilter === "all-actions" || entry.action === actionFilter;
+    const matchesMinistry = ministryFilter === "all-ministries" || 
+                           entry.ministry.toLowerCase().includes(ministryFilter.toLowerCase());
+    const matchesRisk = riskFilter === "all-risk" || entry.riskLevel === riskFilter;
+
+    return matchesSearch && matchesAction && matchesMinistry && matchesRisk;
+  });
+
   const exportAuditLogs = () => {
     const csvContent = [
       "ID,Timestamp,User,Ministry,Action,Resource,Status,IP Address,Risk Level,Details",
@@ -111,6 +139,7 @@ export const AuditLog = () => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   };
+
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'login': return <UserCheck className="h-4 w-4" />;
@@ -175,10 +204,12 @@ export const AuditLog = () => {
               <Input
                 placeholder="Search logs..."
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <Select defaultValue="all-actions">
+            <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Action Type" />
               </SelectTrigger>
@@ -192,7 +223,7 @@ export const AuditLog = () => {
               </SelectContent>
             </Select>
 
-            <Select defaultValue="all-ministries">
+            <Select value={ministryFilter} onValueChange={setMinistryFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Ministry" />
               </SelectTrigger>
@@ -205,7 +236,7 @@ export const AuditLog = () => {
               </SelectContent>
             </Select>
 
-            <Select defaultValue="all-risk">
+            <Select value={riskFilter} onValueChange={setRiskFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Risk Level" />
               </SelectTrigger>
@@ -230,7 +261,7 @@ export const AuditLog = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockAuditData.map((entry) => (
+            {filteredAuditData.map((entry) => (
               <div
                 key={entry.id}
                 className="flex items-start space-x-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
@@ -277,15 +308,31 @@ export const AuditLog = () => {
                 </div>
                 
                 <div className="flex-shrink-0">
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewDetails(entry)}
+                  >
                     <Eye className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ))}
+
+            {filteredAuditData.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No audit entries found matching your filters.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <AuditDetailsModal
+        entry={selectedEntry}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+      />
     </div>
   );
 };

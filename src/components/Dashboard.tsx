@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   FileText, 
   Users, 
@@ -13,6 +15,7 @@ import {
   Filter
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { RequestDetailsModal } from "./RequestDetailsModal";
 
 interface DashboardProps {
   onNewRequest?: () => void;
@@ -79,6 +82,48 @@ const mockRequests: DataRequest[] = [
 ];
 
 export const Dashboard = ({ onNewRequest }: DashboardProps) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [ministryFilter, setMinistryFilter] = useState("all");
+  const [urgencyFilter, setUrgencyFilter] = useState("all");
+  const [selectedRequest, setSelectedRequest] = useState<DataRequest | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [requests, setRequests] = useState(mockRequests);
+
+  const handleViewDetails = (request: DataRequest) => {
+    setSelectedRequest(request);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleApprove = (requestId: string) => {
+    setRequests(prev => prev.map(req => 
+      req.id === requestId ? { ...req, status: 'approved' as const } : req
+    ));
+    setIsDetailsModalOpen(false);
+  };
+
+  const handleReject = (requestId: string) => {
+    setRequests(prev => prev.map(req => 
+      req.id === requestId ? { ...req, status: 'rejected' as const } : req
+    ));
+    setIsDetailsModalOpen(false);
+  };
+
+  const filteredRequests = requests.filter(request => {
+    const matchesSearch = request.dataType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.requestingMinistry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.targetMinistry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         request.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || request.status === statusFilter;
+    const matchesMinistry = ministryFilter === "all" || 
+                           request.requestingMinistry.toLowerCase().includes(ministryFilter.toLowerCase()) ||
+                           request.targetMinistry.toLowerCase().includes(ministryFilter.toLowerCase());
+    const matchesUrgency = urgencyFilter === "all" || request.urgency === urgencyFilter;
+
+    return matchesSearch && matchesStatus && matchesMinistry && matchesUrgency;
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'warning';
@@ -172,24 +217,59 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
           </div>
           
           {/* Search and Filter */}
-          <div className="flex space-x-2 mt-4">
-            <div className="relative flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search requests..."
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={ministryFilter} onValueChange={setMinistryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ministry" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Ministries</SelectItem>
+                <SelectItem value="health">Ministry of Health</SelectItem>
+                <SelectItem value="home">Ministry of Home Affairs</SelectItem>
+                <SelectItem value="education">Ministry of Education</SelectItem>
+                <SelectItem value="foreign">Ministry of Foreign Affairs</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High Priority</SelectItem>
+                <SelectItem value="medium">Medium Priority</SelectItem>
+                <SelectItem value="low">Low Priority</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         
         <CardContent>
           <div className="space-y-4">
-            {mockRequests.map((request) => (
+            {filteredRequests.map((request) => (
               <div
                 key={request.id}
                 className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
@@ -220,25 +300,53 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
                 <div className="flex space-x-2">
                   {request.status === 'pending' && (
                     <>
-                      <Button size="sm" variant="outline" className="text-success border-success hover:bg-success hover:text-success-foreground">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-success border-success hover:bg-success hover:text-success-foreground"
+                        onClick={() => handleApprove(request.id)}
+                      >
                         <CheckCircle className="mr-1 h-3 w-3" />
                         Approve
                       </Button>
-                      <Button size="sm" variant="outline" className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleReject(request.id)}
+                      >
                         <XCircle className="mr-1 h-3 w-3" />
                         Reject
                       </Button>
                     </>
                   )}
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleViewDetails(request)}
+                  >
                     View Details
                   </Button>
                 </div>
               </div>
             ))}
+            
+            {filteredRequests.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No requests found matching your filters.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <RequestDetailsModal
+        request={selectedRequest}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
     </div>
   );
 };
