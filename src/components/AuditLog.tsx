@@ -133,7 +133,13 @@ export const AuditLog = () => {
             Complete audit trail of all system activities and data access
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-primary-hover">
+        <Button 
+          className="bg-gradient-to-r from-primary to-primary-hover"
+          onClick={() => {
+            // Export audit logs as CSV/Excel
+            console.log("Exporting audit logs");
+          }}
+        >
           <Download className="mr-2 h-4 w-4" />
           Export Logs
         </Button>
