@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Plus,
   Search,
-  Filter
+  Filter,
+  Download
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { RequestDetailsModal } from "./RequestDetailsModal";
@@ -139,6 +140,58 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
       req.id === requestId ? { ...req, status: 'rejected' as const } : req
     ));
     setIsDetailsModalOpen(false);
+  };
+
+  const exportRequests = () => {
+    const csvContent = [
+      ['Request ID', 'Requesting Ministry', 'Target Ministry', 'Data Type', 'Purpose', 'Status', 'Urgency', 'Created At'],
+      ...filteredRequests.map(req => [
+        req.id,
+        req.requestingMinistry,
+        req.targetMinistry,
+        req.dataType,
+        req.purpose,
+        req.status,
+        req.urgency,
+        req.createdAt
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `data-requests-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportLogs = () => {
+    const mockLogs = [
+      { timestamp: '2024-01-10 14:30:00', user: 'admin@health.gov', action: 'Request Created', details: 'REQ-001 created by Ministry of Health', ip: '192.168.1.100' },
+      { timestamp: '2024-01-10 15:45:00', user: 'reviewer@home.gov', action: 'Request Reviewed', details: 'REQ-001 under review by Ministry of Home Affairs', ip: '192.168.1.105' },
+      { timestamp: '2024-01-09 09:15:00', user: 'admin@education.gov', action: 'Request Approved', details: 'REQ-002 approved for data sharing', ip: '192.168.1.102' },
+      { timestamp: '2024-01-08 16:20:00', user: 'admin@foreign.gov', action: 'Request Rejected', details: 'REQ-003 rejected due to security concerns', ip: '192.168.1.108' },
+    ];
+
+    const csvContent = [
+      ['Timestamp', 'User', 'Action', 'Details', 'IP Address'],
+      ...mockLogs.map(log => [
+        log.timestamp,
+        log.user,
+        log.action,
+        log.details,
+        log.ip
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const filteredRequests = requests.filter(request => {
@@ -339,13 +392,29 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
                 Manage incoming and outgoing data requests between ministries
               </CardDescription>
             </div>
-            <Button 
-              className="bg-gradient-to-r from-primary to-primary-hover"
-              onClick={onNewRequest}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              New Request
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline"
+                onClick={exportRequests}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Requests
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={exportLogs}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Logs
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-primary to-primary-hover"
+                onClick={onNewRequest}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Request
+              </Button>
+            </div>
           </div>
           
           {/* Search and Filter */}
