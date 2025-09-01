@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { RequestDetailsModal } from "./RequestDetailsModal";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
 
 interface DashboardProps {
   onNewRequest?: () => void;
@@ -80,6 +82,36 @@ const mockRequests: DataRequest[] = [
     urgency: "low"
   }
 ];
+
+// Chart data
+const statusData = [
+  { name: "Approved", value: 98, fill: "hsl(var(--success))" },
+  { name: "Pending", value: 23, fill: "hsl(var(--warning))" },
+  { name: "Rejected", value: 26, fill: "hsl(var(--destructive))" }
+];
+
+const ministryData = [
+  { name: "Health", requests: 45 },
+  { name: "Education", requests: 32 },
+  { name: "Home Affairs", requests: 38 },
+  { name: "Foreign Affairs", requests: 25 },
+  { name: "Finance", requests: 18 }
+];
+
+const monthlyData = [
+  { month: "Sep", requests: 12 },
+  { month: "Oct", requests: 19 },
+  { month: "Nov", requests: 25 },
+  { month: "Dec", requests: 34 },
+  { month: "Jan", requests: 57 }
+];
+
+const chartConfig = {
+  approved: { label: "Approved", color: "hsl(var(--success))" },
+  pending: { label: "Pending", color: "hsl(var(--warning))" },
+  rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+  requests: { label: "Requests", color: "hsl(var(--primary))" }
+};
 
 export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -193,6 +225,106 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{mockStats.totalUsers}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Request Status Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Request Status Distribution</CardTitle>
+            <CardDescription>Breakdown of request statuses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px]">
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <ChartTooltip 
+                  content={<ChartTooltipContent hideLabel />}
+                />
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Requests by Ministry */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Requests by Ministry</CardTitle>
+            <CardDescription>Request volume per ministry</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px]">
+              <BarChart data={ministryData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent />}
+                />
+                <Bar 
+                  dataKey="requests" 
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Monthly Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Request Trend</CardTitle>
+            <CardDescription>Monthly request volume</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px]">
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent />}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="requests" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 6 }}
+                  activeDot={{ r: 8, fill: "hsl(var(--primary))" }}
+                />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
