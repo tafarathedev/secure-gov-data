@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Eye, EyeOff, Lock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { authService, type SignUpData } from "@/services/authService";
 
 interface SignUpFormProps {
-  onSignIn: (ministry: string, role: string, email: string) => void;
+  onSignIn?: (user: any) => void;
 }
 
 const ministries = [
@@ -29,7 +30,7 @@ const roles = [
 ];
 
 const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignUpData>({
     email: "",
     password: "",
     ministry: "",
@@ -39,33 +40,43 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Basic validation
     if (!formData.email || !formData.password || !formData.ministry || !formData.role) {
       setError("All fields are required");
       setIsLoading(false);
       return;
     }
 
-    // Simulate authentication delay
-    setTimeout(() => {
-      // Mock authentication - in real app, this would call your Node.js API
-      if (formData.password.length >= 6) {
-        toast({
-          title: "Login Successful",
-          description: `Welcome to ${formData.ministry}`,
-        });
-        onSignIn(formData.ministry, formData.role, formData.email);
-      } else {
-        setError("Invalid credentials. Password must be at least 6 characters.");
-      }
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
       setIsLoading(false);
-    }, 1000);
+      return;
+    }
+
+    try {
+      const response = await authService.signUp(formData);
+      
+      if (response.success && response.user) {
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to ${response.user.ministry}`,
+        });
+        onSignIn?.(response.user);
+        navigate('/dashboard');
+      } else {
+        setError(response.error || "Registration failed");
+      }
+    } catch (error) {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -89,9 +100,9 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
         {/* Login Card */}
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Sign In</CardTitle>
+            <CardTitle className="text-2xl text-center">Sign Up</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access ministry data
+              Create your account to access ministry data
             </CardDescription>
           </CardHeader>
           
@@ -196,7 +207,7 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Sign In Securely
+                    Create Account
                   </>
                 )}
               </Button>

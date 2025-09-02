@@ -3,14 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Eye, EyeOff, Lock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { authService, type LoginCredentials } from "@/services/authService";
 
 interface LoginFormProps {
-  onLogin: (ministry: string, role: string, username: string) => void;
+  onLogin: (user: any) => void;
 }
 
 
@@ -33,43 +33,45 @@ interface LoginFormProps {
 localStorage.setItem
 
 export const LoginForm = ({ onLogin }: LoginFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LoginCredentials>({
     email: "",
     password: "",
-    
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Basic validation\/*  chanhge if needed in future */
-    /* if (!formData.email || !formData.password || !formData.ministry || !formData.role) { */
     if (!formData.email || !formData.password) {
       setError("All fields are required");
       setIsLoading(false);
       return;
     }
 
-    // Simulate authentication delay
-    setTimeout(() => {
-      // Mock authentication - in real app, this would call your Node.js API
-      if (formData.password.length >= 6) {
+    try {
+      const response = await authService.login(formData);
+      
+      if (response.success && response.user) {
         toast({
           title: "Login Successful",
-          description: `Welcome to ${formData.email}`,
+          description: `Welcome back, ${response.user.email}`,
         });
-        onLogin(formData, formData.role, formData.username);
+        onLogin(response.user);
+        navigate('/dashboard');
       } else {
-        setError("Invalid credentials. Password must be at least 6 characters.");
+        setError(response.error || "Login failed");
       }
+    } catch (error) {
+      setError("Network error. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -149,13 +151,13 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
               </div> */}
 
               <div className="space-y-2">
-                <Label htmlFor="username">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="email "
-                  type="text"
+                  id="email"
+                  type="email"
                   placeholder="Enter your email"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
                 />
               </div>

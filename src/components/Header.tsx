@@ -13,12 +13,14 @@ interface HeaderProps {
   currentMinistry?: string;
   userRole?: string;
   userName?: string;
+  onLogout?: () => void;
 }
 
 export const Header = ({ 
   currentMinistry = "Ministry of Home Affairs", 
   userRole = "Admin", 
-  userName = "John Doe" 
+  userName = "John Doe",
+  onLogout 
 }: HeaderProps) => {
   return (
     <header className="bg-gradient-to-r from-gov-blue-dark to-gov-blue border-b border-border shadow-sm">
@@ -54,7 +56,10 @@ export const Header = ({
                 <DropdownMenuItem>Profile Settings</DropdownMenuItem>
                 <DropdownMenuItem>Change Password</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={onLogout}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
