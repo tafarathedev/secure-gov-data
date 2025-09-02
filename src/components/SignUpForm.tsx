@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { authService, type SignUpData } from "@/services/authService";
 
 interface SignUpFormProps {
-  onSignIn?: (user: any) => void;
+  onSignUp?: (user: any) => void;
 }
 
 const ministries = [
@@ -29,12 +29,17 @@ const roles = [
   "Auditor"
 ];
 
-const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
-  const [formData, setFormData] = useState<SignUpData>({
+const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
+  
+  const [formData, setFormData] = useState<Partial<SignUpData>>({
+    username: "",
     email: "",
     password: "",
-    ministry: "",
-    role: ""
+    full_name: "",
+    position: "",
+    ministry_id: 1,
+    role_id: 3,
+ 
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,12 +47,18 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log('Form Data Changed:', formData);
+  }, [formData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    if (!formData.email || !formData.password || !formData.ministry || !formData.role) {
+    console.log('Form Data on Submit:', formData);
+
+    if (!formData.email || !formData.password || !formData.ministry || !formData.role || !formData.username || !formData.full_name || !formData.position) {
       setError("All fields are required");
       setIsLoading(false);
       return;
@@ -60,15 +71,24 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
     }
 
     try {
-      const response = await authService.signUp(formData);
+      const ministryId = ministries.indexOf(formData.ministry) + 1;
+      const roleId = roles.indexOf(formData.role) + 1;
+
+      const submissionData: SignUpData = {
+        ...formData,
+        ministry_id: ministryId,
+        role_id: roleId,
+      } as SignUpData;
+
+      const response = await authService.signUp(submissionData);
       
       if (response.success && response.user) {
         toast({
           title: "Registration Successful",
           description: `Welcome to ${response.user.ministry}`,
         });
-        onSignIn?.(response.user);
-        navigate('/dashboard');
+        onSignUp?.(response.user);
+        navigate('/');
       } else {
         setError(response.error || "Registration failed");
       }
@@ -119,47 +139,81 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
                 <Label htmlFor="ministry">Ministry</Label>
                 <Select
                   value={formData.ministry}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, ministry: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, ministry_id: Number(value) }))}
                   required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your ministry" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ministries.map((ministry) => (
-                      <SelectItem key={ministry} value={ministry}>
-                        {ministry}
-                      </SelectItem>
+                    {ministries.map((ministry, index) => (
+                       <SelectItem key={ministry} value={(index + 1).toString()}>
+          {ministry}
+        </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+  <Label htmlFor="role">Role</Label>
+  <Select
+    value={formData.role}
+    onValueChange={(value) =>
+      setFormData((prev) => {
+        const numericValue = Number(value);
+        return {
+          ...prev,
+          role_id: numericValue,
+          position: roles[numericValue - 1], // automatically set position
+        };
+      })
+    }
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select your role" />
+    </SelectTrigger>
+    <SelectContent>
+      {roles.map((role, index) => (
+        <SelectItem key={role} value={(index + 1).toString()}>
+          {role}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+               <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                   required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
+
+               <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  type="text"
+                  placeholder="Enter your Full Name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                  required
+                />
+              </div>
+
+             
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  type="text"
+                  type="email"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -218,7 +272,7 @@ const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
                 </Button>
                 <Button variant="link" type="button" className="text-sm text-muted-foreground">
                  <Link to="/" className="text-sm text-primary hover:underline">
-                  Don't have an account? Sign Up
+                  Already have an account? Sign In
                   </Link>
                 </Button>
               </div>

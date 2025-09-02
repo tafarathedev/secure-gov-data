@@ -32,6 +32,13 @@ interface LoginFormProps {
 
 localStorage.setItem
 
+//get authed user from localstorage
+const authUser = localStorage.getItem('auth_user');
+const parsedAuthUser =   authUser ? JSON.parse(authUser) : null;
+//console.log('Authenticated User:', parsedAuthUser.user.full_name);
+
+
+
 export const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [formData, setFormData] = useState<LoginCredentials>({
     email: "",
@@ -60,10 +67,10 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
       if (response.success && response.user) {
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${response.user.email}`,
+          description: `Welcome back, ${parsedAuthUser.user.full_name}`,
         });
         onLogin(response.user);
-        navigate('/dashboard');
+        navigate('/');
       } else {
         setError(response.error || "Login failed");
       }
