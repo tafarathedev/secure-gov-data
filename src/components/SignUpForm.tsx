@@ -39,7 +39,9 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
     position: "",
     ministry_id: 1,
     role_id: 3,
- 
+    phone: "",
+    ministry: "",
+    role: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +60,7 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
 
     console.log('Form Data on Submit:', formData);
 
-    if (!formData.email || !formData.password || !formData.ministry || !formData.role || !formData.username || !formData.full_name || !formData.position) {
+    if (!formData.email || !formData.password || !formData.ministry || !formData.role || !formData.username || !formData.full_name || !formData.position || !formData.phone) {
       setError("All fields are required");
       setIsLoading(false);
       return;
@@ -71,14 +73,16 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
     }
 
     try {
-      const ministryId = ministries.indexOf(formData.ministry) + 1;
-      const roleId = roles.indexOf(formData.role) + 1;
-
       const submissionData: SignUpData = {
-        ...formData,
-        ministry_id: ministryId,
-        role_id: roleId,
-      } as SignUpData;
+        username: formData.username!,
+        email: formData.email!,
+        password: formData.password!,
+        full_name: formData.full_name!,
+        position: formData.position!,
+        ministry_id: formData.ministry_id!,
+        role_id: formData.role_id!,
+        phone: formData.phone!
+      };
 
       const response = await authService.signUp(submissionData);
       
@@ -139,17 +143,21 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
                 <Label htmlFor="ministry">Ministry</Label>
                 <Select
                   value={formData.ministry}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, ministry_id: Number(value) }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    ministry: value,
+                    ministry_id: ministries.indexOf(value) + 1
+                  }))}
                   required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your ministry" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ministries.map((ministry, index) => (
-                       <SelectItem key={ministry} value={(index + 1).toString()}>
-          {ministry}
-        </SelectItem>
+                    {ministries.map((ministry) => (
+                       <SelectItem key={ministry} value={ministry}>
+                         {ministry}
+                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -160,22 +168,20 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
   <Select
     value={formData.role}
     onValueChange={(value) =>
-      setFormData((prev) => {
-        const numericValue = Number(value);
-        return {
-          ...prev,
-          role_id: numericValue,
-          position: roles[numericValue - 1], // automatically set position
-        };
-      })
+      setFormData((prev) => ({
+        ...prev,
+        role: value,
+        role_id: roles.indexOf(value) + 1,
+        position: value
+      }))
     }
   >
     <SelectTrigger>
       <SelectValue placeholder="Select your role" />
     </SelectTrigger>
     <SelectContent>
-      {roles.map((role, index) => (
-        <SelectItem key={role} value={(index + 1).toString()}>
+      {roles.map((role) => (
+        <SelectItem key={role} value={role}>
           {role}
         </SelectItem>
       ))}
@@ -207,7 +213,18 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
                 />
               </div>
 
-             
+              
+               <div className="space-y-2">
+                 <Label htmlFor="phone">Phone</Label>
+                 <Input
+                   id="phone"
+                   type="tel"
+                   placeholder="Enter your phone number"
+                   value={formData.phone}
+                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                   required
+                 />
+               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

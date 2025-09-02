@@ -4,16 +4,16 @@ export interface LoginCredentials {
 }
 
 export interface SignUpData {
-  ministry?:number
- role?:number;
+  ministry?: string;
+  role?: string;
   username: string;
   email: string;
   password: string;
   full_name: string;
   position: string;
-  ministry_id: number;  // use ID instead of name
+  ministry_id: number;
   role_id: number;
-  phone?: string; // optional if not always required
+  phone: string;
 }
 
 
