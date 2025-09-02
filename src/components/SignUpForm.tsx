@@ -86,12 +86,11 @@ const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
 
       const response = await authService.signUp(submissionData);
       
-      if (response.success && response.user) {
+      if (response.success) {
         toast({
           title: "Registration Successful",
-          description: `Welcome to ${response.user.ministry}`,
+          description: "Please login with your new account",
         });
-        onSignUp?.(response.user);
         navigate('/');
       } else {
         setError(response.error || "Registration failed");
