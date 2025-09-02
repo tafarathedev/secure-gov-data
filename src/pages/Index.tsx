@@ -9,6 +9,8 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 interface User {
   ministry: string;
   role: string;
+  email:string;
+  password:string;
   username: string;
 }
 
@@ -18,18 +20,22 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const handleLogin = (ministry: string, role: string, username: string) => {
-    setUser({ ministry, role, username });
+    setUser({ email , password});
     setIsAuthenticated(true);
   };
-
+   
+  const handleSignUp = (ministry: string, role: string, username: string) => {
+    setUser({ ministry, role, username });
+    setIsAuthenticated(true);
+  }
   const handleNewRequest = (requestData: any) => {
     console.log("New request submitted:", requestData);
     // In a real app, this would send to your Node.js backend
   };
 
-  if (!isAuthenticated) {
+  /* if (!isAuthenticated) {
     return <LoginForm onLogin={handleLogin} />;
-  }
+  } */
 
   return (
     <div className="min-h-screen bg-background">

@@ -9,34 +9,31 @@ import { Shield, Eye, EyeOff, Lock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 
-interface LoginFormProps {
-  onLogin: (ministry: string, role: string, username: string) => void;
+interface SignUpFormProps {
+  onSignIn: (ministry: string, role: string, email: string) => void;
 }
 
-
-// change if needed in future
-/* const ministries = [react-router-dom
+const ministries = [
   "Ministry of Home Affairs",
   "Ministry of Health",
   "Ministry of Education",
   "Ministry of Foreign Affairs"
-]; */
+];
 
+const roles = [
+  "Super Admin",
+  "Ministry Admin", 
+  "Data Controller",
+  "Data Analyst",
+  "Auditor"
+];
 
-// replace if needed in future
-/* const roles = [
-  "Admin",
-  "Officer", 
-  "Viewer"
-]; */
-
-localStorage.setItem
-
-export const LoginForm = ({ onLogin }: LoginFormProps) => {
+const SignUpForm = ({ onSignIn }: SignUpFormProps) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    
+    ministry: "",
+    role: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,9 +45,8 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
     setError("");
     setIsLoading(true);
 
-    // Basic validation\/*  chanhge if needed in future */
-    /* if (!formData.email || !formData.password || !formData.ministry || !formData.role) { */
-    if (!formData.email || !formData.password) {
+    // Basic validation
+    if (!formData.email || !formData.password || !formData.ministry || !formData.role) {
       setError("All fields are required");
       setIsLoading(false);
       return;
@@ -62,9 +58,9 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
       if (formData.password.length >= 6) {
         toast({
           title: "Login Successful",
-          description: `Welcome to ${formData.email}`,
+          description: `Welcome to ${formData.ministry}`,
         });
-        onLogin(formData, formData.role, formData.username);
+        onSignIn(formData.ministry, formData.role, formData.email);
       } else {
         setError("Invalid credentials. Password must be at least 6 characters.");
       }
@@ -107,7 +103,7 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-{/* 
+
               <div className="space-y-2">
                 <Label htmlFor="ministry">Ministry</Label>
                 <Select
@@ -126,9 +122,9 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div> */}
+              </div>
 
-              {/* <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
                 <Select
                   value={formData.role}
@@ -146,16 +142,16 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div> */}
+              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="email "
+                  id="email"
                   type="text"
                   placeholder="Enter your email"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
                 />
               </div>
@@ -207,8 +203,11 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
 
               <div className="text-center">
                 <Button variant="link" type="button" className="text-sm text-muted-foreground">
-                <Link to="/signup" className="text-sm text-primary hover:underline">
-                  Create an Account
+                 <Link to="#"> Forgot your password?</Link>
+                </Button>
+                <Button variant="link" type="button" className="text-sm text-muted-foreground">
+                 <Link to="/" className="text-sm text-primary hover:underline">
+                  Don't have an account? Sign Up
                   </Link>
                 </Button>
               </div>
@@ -226,3 +225,6 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
     </div>
   );
 };
+
+
+export default SignUpForm;
