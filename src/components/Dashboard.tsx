@@ -523,7 +523,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => handleViewDetails(request)}
+                    onClick={() => handleViewDetails(request as any)}
                   >
                     View Details
                   </Button>
