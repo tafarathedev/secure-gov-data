@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { RequestDetailsModal } from "./RequestDetailsModal";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
+import { useDataRequests } from "@/hooks/useDataRequests";
 
 interface DashboardProps {
   onNewRequest?: () => void;
@@ -121,24 +122,22 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<DataRequest | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [requests, setRequests] = useState(mockRequests);
+  const { requests, loading, approveRequest, rejectRequest } = useDataRequests();
 
   const handleViewDetails = (request: DataRequest) => {
     setSelectedRequest(request);
     setIsDetailsModalOpen(true);
   };
 
-  const handleApprove = (requestId: string) => {
-    setRequests(prev => prev.map(req => 
-      req.id === requestId ? { ...req, status: 'approved' as const } : req
-    ));
+  const handleApprove = async (requestId: string) => {
+    if (!requestId) return;
+    await approveRequest(requestId);
     setIsDetailsModalOpen(false);
   };
 
-  const handleReject = (requestId: string) => {
-    setRequests(prev => prev.map(req => 
-      req.id === requestId ? { ...req, status: 'rejected' as const } : req
-    ));
+  const handleReject = async (requestId: string) => {
+    if (!requestId) return;
+    await rejectRequest(requestId);
     setIsDetailsModalOpen(false);
   };
 

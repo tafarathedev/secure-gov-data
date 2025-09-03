@@ -17,6 +17,7 @@ import {
   XCircle
 } from "lucide-react";
 import { AuditDetailsModal } from "./AuditDetailsModal";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
 
 interface AuditEntry {
   id: string;
@@ -101,13 +102,14 @@ export const AuditLog = () => {
   const [riskFilter, setRiskFilter] = useState("all-risk");
   const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const { logs, loading } = useAuditLogs();
 
   const handleViewDetails = (entry: AuditEntry) => {
     setSelectedEntry(entry);
     setIsDetailsModalOpen(true);
   };
 
-  const filteredAuditData = mockAuditData.filter(entry => {
+  const filteredAuditData = logs.filter(entry => {
     const matchesSearch = entry.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.ministry.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,7 +126,7 @@ export const AuditLog = () => {
   const exportAuditLogs = () => {
     const csvContent = [
       "ID,Timestamp,User,Ministry,Action,Resource,Status,IP Address,Risk Level,Details",
-      ...mockAuditData.map(entry => 
+      ...logs.map(entry => 
         `"${entry.id}","${entry.timestamp}","${entry.user}","${entry.ministry}","${entry.action}","${entry.resource}","${entry.status}","${entry.ipAddress}","${entry.riskLevel}","${entry.details}"`
       )
     ].join('\n');

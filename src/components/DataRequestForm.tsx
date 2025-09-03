@@ -251,7 +251,7 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
               <Label>Request Urgency *</Label>
               <RadioGroup
                 value={formData.urgency}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, urgency: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, urgency: value as 'low' | 'medium' | 'high' }))}
                 className="space-y-2"
               >
                 {urgencyLevels.map((level) => (
