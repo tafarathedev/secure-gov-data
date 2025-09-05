@@ -24,12 +24,15 @@ interface AuditEntry {
   timestamp: string;
   user: string;
   ministry: string;
-  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete';
+  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete' | 'signup' | 'logout';
   resource: string;
   status: 'success' | 'failed' | 'pending';
   ipAddress: string;
   details: string;
   riskLevel: 'low' | 'medium' | 'high';
+  userAgent?: string;
+  country?: string;
+  city?: string;
 }
 
 const mockAuditData: AuditEntry[] = [
@@ -113,14 +116,17 @@ export const AuditLog = () => {
   const auditEntries: AuditEntry[] = logs.map(log => ({
     id: log.id || '',
     timestamp: log.timestamp || new Date().toISOString(),
-    user: log.user || '',
-    ministry: log.ministry || '',
+    user: log.user_email || '',
+    ministry: log.ministry_id ? `Ministry ID: ${log.ministry_id}` : '',
     action: log.action,
     resource: log.resource,
     status: log.status || 'success',
-    ipAddress: log.ipAddress || '',
+    ipAddress: log.ip_address || '',
     details: log.details,
-    riskLevel: log.riskLevel || 'low'
+    riskLevel: log.risk_level || 'low',
+    userAgent: log.user_agent,
+    country: log.country,
+    city: log.city
   }));
 
   const filteredAuditData = auditEntries.filter(entry => {
@@ -315,7 +321,7 @@ export const AuditLog = () => {
                       <strong>User:</strong> {entry.user} | <strong>Ministry:</strong> {entry.ministry}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      <strong>IP Address:</strong> {entry.ipAddress}
+                      <strong>IP Address:</strong> {entry.ipAddress} | <strong>Location:</strong> {entry.city}, {entry.country}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {entry.details}

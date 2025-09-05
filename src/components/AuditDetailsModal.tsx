@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -17,7 +16,7 @@ interface AuditEntry {
   timestamp: string;
   user: string;
   ministry: string;
-  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete';
+  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete' | 'signup' | 'logout';
   resource: string;
   status: 'success' | 'failed' | 'pending';
   ipAddress: string;
@@ -52,16 +51,32 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
     }
   };
 
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'login':
+      case 'logout':
+        return <User className="h-4 w-4" />;
+      case 'data_request':
+      case 'data_access':
+        return <Shield className="h-4 w-4" />;
+      case 'approval':
+      case 'rejection':
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return <Globe className="h-4 w-4" />;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Shield className="h-5 w-5" />
+            {getActionIcon(entry.action)}
             <span>Audit Log Details</span>
           </DialogTitle>
           <DialogDescription>
-            Complete information about this security audit entry
+            Detailed information about this system activity
           </DialogDescription>
         </DialogHeader>
 
@@ -79,16 +94,8 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
 
           <Separator />
 
-          {/* Audit Information */}
+          {/* Activity Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Timestamp</span>
-              </div>
-              <p className="font-medium">{entry.timestamp}</p>
-            </div>
-
             <div className="space-y-2">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
@@ -107,6 +114,22 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
 
             <div className="space-y-2">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4" />
+                <span>Action</span>
+              </div>
+              <p className="font-medium">{entry.action.replace('_', ' ').charAt(0).toUpperCase() + entry.action.replace('_', ' ').slice(1)}</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Globe className="h-4 w-4" />
+                <span>Resource</span>
+              </div>
+              <p className="font-medium">{entry.resource}</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Globe className="h-4 w-4" />
                 <span>IP Address</span>
               </div>
@@ -115,27 +138,19 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
 
             <div className="space-y-2">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Action</span>
+                <Clock className="h-4 w-4" />
+                <span>Timestamp</span>
               </div>
-              <p className="font-medium">
-                {entry.action.replace('_', ' ').charAt(0).toUpperCase() + entry.action.replace('_', ' ').slice(1)}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <span>Resource</span>
-              </div>
-              <p className="font-medium">{entry.resource}</p>
+              <p className="font-medium">{entry.timestamp}</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <AlertTriangle className="h-4 w-4" />
               <span>Details</span>
             </div>
-            <p className="font-medium bg-muted/50 p-3 rounded-md">{entry.details}</p>
+            <p className="font-medium bg-muted p-3 rounded-md">{entry.details}</p>
           </div>
         </div>
       </DialogContent>

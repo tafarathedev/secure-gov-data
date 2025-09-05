@@ -1,3 +1,5 @@
+import { auditLogin, auditSignup, auditLogout } from '@/utils/auditLogger';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -58,6 +60,8 @@ class AuthService {
       if (data.token) {
         this.setToken(data.token);
         this.setUser(data.user);
+        // Create audit log for successful login
+        auditLogin(credentials.email, 'success');
       }
 
       return {
@@ -67,6 +71,8 @@ class AuthService {
         message: data.message || 'Login successful',
       };
     } catch (error) {
+      // Create audit log for failed login
+      auditLogin(credentials.email, 'failed');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error occurred',
@@ -96,6 +102,8 @@ class AuthService {
       if (data.token) {
         this.setToken(data.token);
         this.setUser(data.user);
+        // Create audit log for successful signup
+        auditSignup(userData.email, 'success');
       }
 
       return {
@@ -105,6 +113,8 @@ class AuthService {
         message: data.message || 'Registration successful',
       };
     } catch (error) {
+      // Create audit log for failed signup
+      auditSignup(userData.email, 'failed');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error occurred',
@@ -113,6 +123,10 @@ class AuthService {
   }
 
   logout(): void {
+    const user = this.getUser();
+    if (user?.email) {
+      auditLogout(user.email);
+    }
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
   }

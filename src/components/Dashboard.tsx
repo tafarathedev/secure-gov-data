@@ -22,6 +22,7 @@ import { RequestDetailsModal } from "./RequestDetailsModal";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import { auditDataApproval, auditDataAccess, auditDownload } from "@/utils/auditLogger";
 
 
 interface DashboardProps {
@@ -242,6 +243,8 @@ const handleApprove = async (requestId: string) => {
     );
     
     console.log("Request approved:", response.data);
+    // Create audit log for approval
+    await auditDataApproval(requestId, 'approval');
     //toast
 
   } catch (error: any) {
@@ -266,7 +269,9 @@ const handleApprove = async (requestId: string) => {
       }
     );
    
-    console.log("Request approved:", response.data);
+    console.log("Request rejected:", response.data);
+    // Create audit log for rejection
+    await auditDataApproval(requestId, 'rejection');
     //toast
     
   } catch (error: any) {

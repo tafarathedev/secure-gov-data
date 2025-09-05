@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Ministry } from "@/services/ministryService";
+import { auditDataRequest } from "@/utils/auditLogger";
 
 interface DataRequestFormProps {
   currentMinistry: string;
@@ -183,6 +184,12 @@ if (!response.ok) {
 }
 
 const data = await response.json();
+
+    // Create audit log for data request
+    await auditDataRequest(
+      data.id || 'unknown',
+      formData.targetMinistry
+    );
 
     // Reset form
     setFormData({
