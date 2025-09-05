@@ -20,6 +20,7 @@ import {
   Database
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Ministry } from "@/services/ministryService";
 
 interface DataRequestFormProps {
   currentMinistry: string;
@@ -67,7 +68,7 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
     supervisorApproval: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [targetMinistryOptions, setTargetMinistryOptions] = useState<string[]>([]);
+  const [targetMinistryOptions, setTargetMinistryOptions] = useState<Ministry[]>([]);
   const [dataTypes,setDataTypes] = useState<string[]>([]);
   //authed user info from session storage
   const currentUserId = localStorage.getItem("auth_token") || "user-123"+1;
@@ -80,9 +81,9 @@ const fetchMinistries = async () => {
       const response = await fetch('http://localhost:4000/ministries/api/ministry');
     const data = await response.json();
     if (response.ok) {
-      setTargetMinistryOptions(data.ministries)
-      return data.ministries; // Assuming the API returns an array of ministries   
-    } 
+      setTargetMinistryOptions(data || [])
+      return data || []; // Assuming the API returns an array of ministries   
+    }
     console.log('no data returned')
   return data
   } catch (error) {
@@ -202,7 +203,7 @@ const data = await response.json();
     toast({
       title: "Request Submitted",
       description:data.message || "Request submitted successfully",
-      variant: "success",
+      variant: "default",
     });
     //navigator('/')
 
@@ -255,9 +256,9 @@ const data = await response.json();
   </SelectTrigger>
   <SelectContent>
     {targetMinistryOptions
-      .filter((ministry) => ministry.name !== currentMinistry) // 👈 filter first
-      .map((ministry) => (                             // 👈 then map
-        <SelectItem key={ministry.id} value={ministry.id}>
+      .filter((ministry) => ministry.name !== currentMinistry)
+      .map((ministry) => (
+        <SelectItem key={ministry.id} value={ministry.id.toString()}>
           {ministry.name}
         </SelectItem>
       ))}
@@ -298,9 +299,9 @@ const data = await response.json();
                     <SelectValue placeholder="Select type of data needed" />
                   </SelectTrigger>
                   <SelectContent>
-                    {dataTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        {type.name}
+                    {dataTypes.map((type, index) => (
+                      <SelectItem key={index} value={type}>
+                        {type}
                       </SelectItem>
                     ))}
                   </SelectContent>

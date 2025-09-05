@@ -24,7 +24,7 @@ interface AuditEntry {
   timestamp: string;
   user: string;
   ministry: string;
-  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download';
+  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete';
   resource: string;
   status: 'success' | 'failed' | 'pending';
   ipAddress: string;
@@ -109,7 +109,21 @@ export const AuditLog = () => {
     setIsDetailsModalOpen(true);
   };
 
-  const filteredAuditData = logs.filter(entry => {
+  // Convert AuditLog to AuditEntry format
+  const auditEntries: AuditEntry[] = logs.map(log => ({
+    id: log.id || '',
+    timestamp: log.timestamp || new Date().toISOString(),
+    user: log.user || '',
+    ministry: log.ministry || '',
+    action: log.action,
+    resource: log.resource,
+    status: log.status || 'success',
+    ipAddress: log.ipAddress || '',
+    details: log.details,
+    riskLevel: log.riskLevel || 'low'
+  }));
+
+  const filteredAuditData = auditEntries.filter(entry => {
     const matchesSearch = entry.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.ministry.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,7 +140,7 @@ export const AuditLog = () => {
   const exportAuditLogs = () => {
     const csvContent = [
       "ID,Timestamp,User,Ministry,Action,Resource,Status,IP Address,Risk Level,Details",
-      ...logs.map(entry => 
+      ...auditEntries.map(entry => 
         `"${entry.id}","${entry.timestamp}","${entry.user}","${entry.ministry}","${entry.action}","${entry.resource}","${entry.status}","${entry.ipAddress}","${entry.riskLevel}","${entry.details}"`
       )
     ].join('\n');

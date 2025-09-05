@@ -1,5 +1,6 @@
 import { Shield, UserCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ export const Header = ({
   userName = "John Doe",
   onLogout 
 }: HeaderProps) => {
+  const navigate = useNavigate();
   return (
     <header className="bg-gradient-to-r from-gov-blue-dark to-gov-blue border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,8 +55,8 @@ export const Header = ({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-                <DropdownMenuItem>Change Password</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>Profile Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/change-password')}>Change Password</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive"

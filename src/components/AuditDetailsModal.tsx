@@ -17,7 +17,7 @@ interface AuditEntry {
   timestamp: string;
   user: string;
   ministry: string;
-  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download';
+  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete';
   resource: string;
   status: 'success' | 'failed' | 'pending';
   ipAddress: string;

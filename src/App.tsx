@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SignUpForm from "./components/SignUpForm";
 import { Dashboard } from "./components/Dashboard";
+import { ProfileSettings } from "./components/ProfileSettings";
+import { ChangePassword } from "./components/ChangePassword";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +23,8 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/signup" element={<SignUpForm onSignUp={() => {}} />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<ProfileSettings />} />
+          <Route path="/change-password" element={<ChangePassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

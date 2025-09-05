@@ -71,7 +71,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [rejectedRequests, setRejectedRequests] = useState([]);
   const [ministries, setMinistries] = useState([]);
- const [dataTypes,setDataTypes] = useState<string[]>([]);
+ const [dataTypes,setDataTypes] = useState<any[]>([]);
 
 //fetch data requests from backend
 const baseURI = "http://localhost:4000/data-requests/api";
@@ -154,7 +154,7 @@ fetchUsers()
 //Utility : map data types data to the name 
 const getDataTypesName = (id: number) =>{
   const data_types = dataTypes.find((d:any) => d.id === id)
-  return data_types ? data_types.name : "unknown"
+  return data_types ? (typeof data_types === 'string' ? data_types : data_types.name) : "unknown"
 }
 
 //count requests by status
@@ -687,8 +687,6 @@ const handleApprove = async (requestId: string) => {
 
       <RequestDetailsModal
         request={selectedRequest}
-        getMinProp={getMinistryName}
-        getDtProp = {getDataTypesName}
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         onApprove={handleApprove}

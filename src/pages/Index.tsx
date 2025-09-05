@@ -66,6 +66,7 @@ const Index = () => {
             requests: (
               <DataRequestForm 
                 currentMinistry={user?.ministry || ""}
+                targetMinistry=""
                 onSubmit={handleNewRequest}
               />
             ),
