@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import axios from 'axios'
+import { format } from "date-fns";//date lib
 import { 
   FileText, 
   Users, 
@@ -19,7 +21,8 @@ import { Input } from "@/components/ui/input";
 import { RequestDetailsModal } from "./RequestDetailsModal";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
-import { useDataRequests } from "@/hooks/useDataRequests";
+import { toast } from "sonner";
+
 
 interface DashboardProps {
   onNewRequest?: () => void;
@@ -52,68 +55,8 @@ const mockStats: DashboardStats = {
   totalUsers: 156
 };
 
-const mockRequests: DataRequest[] = [
-  {
-    id: "REQ-001",
-    requestingMinistry: "Ministry of Health",
-    targetMinistry: "Ministry of Home Affairs",
-    dataType: "Citizen Health Records",
-    purpose: "COVID-19 Contact Tracing",
-    status: "pending",
-    createdAt: "2024-01-10",
-    urgency: "high"
-  },
-  {
-    id: "REQ-002",
-    requestingMinistry: "Ministry of Education",
-    targetMinistry: "Ministry of Home Affairs",
-    dataType: "Student Demographics",
-    purpose: "Educational Planning",
-    status: "approved",
-    createdAt: "2024-01-09",
-    urgency: "medium"
-  },
-  {
-    id: "REQ-003",
-    requestingMinistry: "Ministry of Foreign Affairs",
-    targetMinistry: "Ministry of Home Affairs",
-    dataType: "Passport Records",
-    purpose: "Visa Processing",
-    status: "rejected",
-    createdAt: "2024-01-08",
-    urgency: "low"
-  }
-];
 
-// Chart data
-const statusData = [
-  { name: "Approved", value: 98, fill: "hsl(var(--success))" },
-  { name: "Pending", value: 23, fill: "hsl(var(--warning))" },
-  { name: "Rejected", value: 26, fill: "hsl(var(--destructive))" }
-];
 
-const ministryData = [
-  { name: "Health", requests: 45 },
-  { name: "Education", requests: 32 },
-  { name: "Home Affairs", requests: 38 },
-  { name: "Foreign Affairs", requests: 25 },
-  { name: "Finance", requests: 18 }
-];
-
-const monthlyData = [
-  { month: "Sep", requests: 12 },
-  { month: "Oct", requests: 19 },
-  { month: "Nov", requests: 25 },
-  { month: "Dec", requests: 34 },
-  { month: "Jan", requests: 57 }
-];
-
-const chartConfig = {
-  approved: { label: "Approved", color: "hsl(var(--success))" },
-  pending: { label: "Pending", color: "hsl(var(--warning))" },
-  rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
-  requests: { label: "Requests", color: "hsl(var(--primary))" }
-};
 
 export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -122,23 +65,213 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<DataRequest | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const { requests, loading, approveRequest, rejectRequest } = useDataRequests();
+  const [requests, setRequests] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [approvedRequests, setApprovedRequests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [rejectedRequests, setRejectedRequests] = useState([]);
+  const [ministries, setMinistries] = useState([]);
+ const [dataTypes,setDataTypes] = useState<string[]>([]);
 
+//fetch data requests from backend
+const baseURI = "http://localhost:4000/data-requests/api";
+
+useEffect(()=>{
+  //fetched requests
+async function fetchrequests() {
+  try {
+    const response = await fetch(`${baseURI}/`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+   const data =   await response.json();
+    setRequests(data.data);
+    return data
+  } catch (error) {
+    console.error("Error fetching data requests:", error);
+    throw error;
+  }
+}
+ fetchrequests().then((data) => console.log(data));
+
+
+
+//fetch users to get total users
+const fetchUsers = async () => {
+  try{
+    const response = await axios.get('http://localhost:4000/auth/api/users');
+      
+   //console.log("users:",response);
+  if(response.status === 200){
+    const users = response.data.users 
+    setTotalUsers(users.length)
+    console.log("users:",users);
+  }
+  }catch(error){console.log(error)}
+}
+
+
+fetchUsers()
+
+  
+//fetch ministries
+
+   fetch("http://localhost:4000/ministries/api/ministry")
+  .then(res => res.json()) // <-- run it
+  .then(data => {
+    console.log(data.ministries)
+    setMinistries(data.ministries);
+  })
+  .catch(err => console.error("Error fetching ministries:", err));
+
+
+  //fetch data dataTypes
+  fetch('http://localhost:4000/data-types/api/')
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json(); // parse JSON
+  })
+  .then((dataTypes) => {
+    setDataTypes(dataTypes.data); // set state
+    console.log("data types from API", dataTypes.data);
+    return dataTypes.data; // return data if needed
+  })
+  .catch((error) => {
+    console.error("Error fetching data types:", error);
+  });
+
+
+},[])
+ // Utility: map ministry ID to name
+  const getMinistryName = (id: number) => {
+  const ministry = ministries.find((m: any) => m.id === id);
+  return ministry ? ministry.name : "Unknown";
+};
+
+
+//Utility : map data types data to the name 
+const getDataTypesName = (id: number) =>{
+  const data_types = dataTypes.find((d:any) => d.id === id)
+  return data_types ? data_types.name : "unknown"
+}
+
+//count requests by status
+const approvedCount = requests.filter((req) => req.status === "approved").length;
+const pendingCount = requests.filter((req) => req.status === "pending").length;
+const rejectedCount = requests.filter((req) => req.status === "rejected").length;
+
+//counts request from ministries
+const homeAffRequests = requests.filter((req) => req.requesting_ministry_id === 1).length;
+const healthRequests = requests.filter((req) => req.requesting_ministry_id === 2).length;
+const eduRequests = requests.filter((req) => req.requesting_ministry_id === 3).length;
+const foreignAffRequests = requests.filter((req) => req.requesting_ministry_id === 4).length;
+const financeRequests = requests.filter((req) => req.requesting_ministry_id === 5).length;
+
+//requests by month
+//from current month till 5 months later 
+const currentMonth = new Date().getMonth(); // 0-11
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthlyCounts = Array(5).fill(0); // For 5 months
+
+requests.forEach((req) => {
+  const reqDate = new Date(req.createdAt);
+  const reqMonth = reqDate.getMonth();
+  const monthDiff = (reqMonth - currentMonth + 12) % 12; // Handle year wrap-around
+  if (monthDiff < 5) {
+    monthlyCounts[monthDiff]++;
+  }
+});
+
+// Prepare data for monthly trend chart
+const monthlyData = monthlyCounts.map((count, index) => ({
+  month: monthNames[(currentMonth + index) % 12],
+  requests: count,
+}));
+
+
+// Chart data
+const statusData = [
+  { name: "Approved", value: approvedCount, fill: "hsl(var(--success))" },
+  { name: "Pending", value: pendingCount, fill: "hsl(var(--warning))" },
+  { name: "Rejected", value: rejectedCount, fill: "hsl(var(--destructive))" }
+];
+
+const ministryData = [
+  { name: "Home Affairs", requests: homeAffRequests },
+  { name: "Education", requests: eduRequests },
+  { name: "Health", requests: healthRequests },
+  { name: "Foreign Affairs", requests: foreignAffRequests },
+  { name: "Finance", requests: financeRequests }
+];
+
+
+
+const chartConfig = {
+  approved: { label: "Approved", color: "hsl(var(--success))" },
+  pending: { label: "Pending", color: "hsl(var(--warning))" },
+  rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+  requests: { label: "Requests", color: "hsl(var(--primary))" }
+};
+
+
+
+  console.log("data requests",requests);
   const handleViewDetails = (request: DataRequest) => {
     setSelectedRequest(request);
     setIsDetailsModalOpen(true);
   };
 
-  const handleApprove = async (requestId: string) => {
-    if (!requestId) return;
-    await approveRequest(requestId);
-    setIsDetailsModalOpen(false);
-  };
+
+const handleApprove = async (requestId: string) => {
+  const payload = { status: "approved" }; // match enum from DB
+ setIsDetailsModalOpen(false);
+  try {
+    const token = localStorage.getItem("auth_token"); // if you store JWT here
+
+    const response = await axios.put(
+      `http://localhost:4000/data-requests/api/${requestId}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // only if required
+        },
+      }
+    );
+    
+    console.log("Request approved:", response.data);
+    //toast
+
+  } catch (error: any) {
+    console.error("Error approving request:", error.response?.data || error.message);
+  }
+};
 
   const handleReject = async (requestId: string) => {
-    if (!requestId) return;
-    await rejectRequest(requestId);
-    setIsDetailsModalOpen(false);
+     const payload = { status: "rejected" }; // match enum from DB
+     setIsDetailsModalOpen(false);
+  try {
+    const token = localStorage.getItem("auth_token"); // if you store JWT here
+
+    const response = await axios.put(
+      `http://localhost:4000/data-requests/api/${requestId}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // only if required
+        },
+      }
+    );
+   
+    console.log("Request approved:", response.data);
+    //toast
+    
+  } catch (error: any) {
+    console.error("Error approving request:", error.response?.data || error.message);
+  }
   };
 
   const exportRequests = () => {
@@ -146,13 +279,13 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
       ['Request ID', 'Requesting Ministry', 'Target Ministry', 'Data Type', 'Purpose', 'Status', 'Urgency', 'Created At'],
       ...filteredRequests.map(req => [
         req.id,
-        req.requestingMinistry,
-        req.targetMinistry,
-        req.dataType,
+        getMinistryName(req.requesting_ministry_id),
+        getMinistryName(req.target_ministry_id),
+        getDataTypesName(req.data_type_id),
         req.purpose,
         req.status,
         req.urgency,
-        req.createdAt
+        req.created_at
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -193,21 +326,27 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
     window.URL.revokeObjectURL(url);
   };
 
-  const filteredRequests = requests.filter(request => {
-    const matchesSearch = request.dataType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.requestingMinistry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.targetMinistry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.purpose.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || request.status === statusFilter;
-    const matchesMinistry = ministryFilter === "all" || 
-                           request.requestingMinistry.toLowerCase().includes(ministryFilter.toLowerCase()) ||
-                           request.targetMinistry.toLowerCase().includes(ministryFilter.toLowerCase());
-    const matchesUrgency = urgencyFilter === "all" || request.urgency === urgencyFilter;
+   const filteredRequests = requests.filter(request => {
+  const search = searchTerm.toLowerCase();
 
-    return matchesSearch && matchesStatus && matchesMinistry && matchesUrgency;
-  });
+  const matchesSearch =
+    request.dataType?.toLowerCase().includes(search) ||
+    request.requestingMinistry?.toLowerCase().includes(search) ||
+    request.targetMinistry?.toLowerCase().includes(search) ||
+    request.purpose?.toLowerCase().includes(search);
 
+  const matchesStatus = statusFilter === "all" || request.status?.toLowerCase() === statusFilter.toLowerCase();
+  const matchesMinistry =
+    ministryFilter === "all" ||
+    request.requestingMinistry?.toLowerCase().includes(ministryFilter.toLowerCase()) ||
+    request.targetMinistry?.toLowerCase().includes(ministryFilter.toLowerCase());
+
+  const matchesUrgency = urgencyFilter === "all" || request.urgency?.toLowerCase() === urgencyFilter.toLowerCase();
+
+  return matchesSearch && matchesStatus && matchesMinistry && matchesUrgency;
+});
+
+ 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'warning';
@@ -236,7 +375,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{mockStats.totalRequests}</div>
+            <div className="text-2xl font-bold text-primary">{requests.length}</div>
           </CardContent>
         </Card>
 
@@ -246,7 +385,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
             <Clock className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{mockStats.pendingRequests}</div>
+            <div className="text-2xl font-bold text-warning">{pendingCount}</div>
           </CardContent>
         </Card>
 
@@ -256,7 +395,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
             <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{mockStats.approvedRequests}</div>
+            <div className="text-2xl font-bold text-success">{approvedCount}</div>
           </CardContent>
         </Card>
 
@@ -266,7 +405,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{mockStats.rejectedRequests}</div>
+            <div className="text-2xl font-bold text-destructive">{rejectedCount}</div>
           </CardContent>
         </Card>
 
@@ -276,13 +415,13 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{mockStats.totalUsers}</div>
+            <div className="text-2xl font-bold text-primary">{totalUsers}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Request Status Distribution */}
         <Card>
           <CardHeader>
@@ -294,7 +433,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
               <PieChart>
                 <Pie
                   data={statusData}
-                  cx="50%"
+                  cx="60%"
                   cy="50%"
                   innerRadius={60}
                   outerRadius={100}
@@ -486,24 +625,30 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
                   </div>
                   
                   <h4 className="font-semibold text-foreground">{request.dataType}</h4>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    <strong>From:</strong> {request.requestingMinistry} → <strong>To:</strong> {request.targetMinistry}
-                  </p>
+                  <p key={request.id} className="text-sm text-muted-foreground mb-1">
+          <strong>From:</strong> {getMinistryName(request.requesting_ministry_id)} →
+          <strong>To:</strong> {getMinistryName(request.target_ministry_id)}
+        </p>
                   <p className="text-sm text-muted-foreground">
                     <strong>Purpose:</strong> {request.purpose}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Submitted: {request.createdAt}
-                  </p>
+                <p className="text-sm text-muted-foreground mb-1">
+              <strong>Submitted at:</strong>{" "}
+              {request.created_at
+                ? format(new Date(request.created_at), "dd MMM yyyy, HH:mm")
+                : "N/A"}
+            </p>
+
                 </div>
                 
-                <div className="flex space-x-2">
-                  {request.status === 'pending' && (
+                <div  className="flex space-x-2">
+                  {request.status === 'pending'? (
                     <>
                       <Button 
                         size="sm" 
                         variant="outline" 
                         className="text-success border-success hover:bg-success hover:text-success-foreground"
+                       
                         onClick={() => handleApprove(request.id)}
                       >
                         <CheckCircle className="mr-1 h-3 w-3" />
@@ -519,7 +664,7 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
                         Reject
                       </Button>
                     </>
-                  )}
+                  ): <></>}
                   <Button 
                     size="sm" 
                     variant="outline"
@@ -531,17 +676,19 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
               </div>
             ))}
             
-            {filteredRequests.length === 0 && (
+             {filteredRequests.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 No requests found matching your filters.
               </div>
-            )}
+            )} 
           </div>
         </CardContent>
       </Card>
 
       <RequestDetailsModal
         request={selectedRequest}
+        getMinProp={getMinistryName}
+        getDtProp = {getDataTypesName}
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         onApprove={handleApprove}

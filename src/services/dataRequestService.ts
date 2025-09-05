@@ -25,7 +25,7 @@ export interface DataRequestResponse {
 }
 
 class DataRequestService {
-  private baseUrl = 'http://localhost:4000/data_requests/api';
+  private baseUrl = "http://localhost:4000/data-requests/api";
 
   private getHeaders() {
     return {
@@ -36,7 +36,7 @@ class DataRequestService {
 
   async createDataRequest(requestData: DataRequest): Promise<DataRequestResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/`, {
+      const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(requestData),
@@ -50,7 +50,7 @@ class DataRequestService {
           error: data.message || 'Failed to create data request',
         };
       }
-
+console.log("requsted data", data);
       return {
         success: true,
         data: data,
@@ -66,7 +66,7 @@ class DataRequestService {
 
   async getAllDataRequests(): Promise<DataRequestResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/`, {
+      const response = await fetch(this.baseUrl, {
         method: 'GET',
         headers: this.getHeaders(),
       });

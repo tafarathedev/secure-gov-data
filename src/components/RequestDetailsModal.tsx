@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";//date lib
 import { 
   Calendar, 
   Building2, 
@@ -17,7 +18,9 @@ import {
 interface DataRequest {
   id: string;
   requestingMinistry: string;
+  target_ministry_id:string;
   targetMinistry: string;
+  requesting_ministry_id
   dataType: string;
   purpose: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -36,6 +39,8 @@ interface RequestDetailsModalProps {
 export const RequestDetailsModal = ({ 
   request, 
   isOpen, 
+  getDtProp,
+  getMinProp,
   onClose, 
   onApprove, 
   onReject 
@@ -94,7 +99,7 @@ export const RequestDetailsModal = ({
                 <Building2 className="h-4 w-4" />
                 <span>Requesting Ministry</span>
               </div>
-              <p className="font-medium">{request.requestingMinistry}</p>
+              <p className="font-medium">{getMinProp(request.requesting_ministry_id)}</p>
             </div>
 
             <div className="space-y-2">
@@ -102,7 +107,7 @@ export const RequestDetailsModal = ({
                 <Target className="h-4 w-4" />
                 <span>Target Ministry</span>
               </div>
-              <p className="font-medium">{request.targetMinistry}</p>
+              <p className="font-medium">{getMinProp(request.target_ministry_id)}</p>
             </div>
 
             <div className="space-y-2">
@@ -110,7 +115,7 @@ export const RequestDetailsModal = ({
                 <FileText className="h-4 w-4" />
                 <span>Data Type</span>
               </div>
-              <p className="font-medium">{request.dataType}</p>
+              <p className="font-medium">{getDtProp(request.data_type_id)}</p>
             </div>
 
             <div className="space-y-2">
@@ -118,7 +123,12 @@ export const RequestDetailsModal = ({
                 <Calendar className="h-4 w-4" />
                 <span>Submitted Date</span>
               </div>
-              <p className="font-medium">{request.createdAt}</p>
+               <p className="text-sm text-muted-foreground mb-1">
+                            <strong>Submitted at:</strong>{" "}
+                            {request.created_at
+                              ? format(new Date(request.created_at), "dd MMM yyyy, HH:mm")
+                              : "N/A"}
+                          </p>
             </div>
           </div>
 

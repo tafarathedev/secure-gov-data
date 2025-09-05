@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,16 +23,17 @@ import { useToast } from "@/hooks/use-toast";
 
 interface DataRequestFormProps {
   currentMinistry: string;
+  targetMinistry: string;
   onSubmit: (requestData: any) => void;
 }
 
-const targetMinistries = [
+/* const targetMinistries = [
   "Ministry of Home Affairs",
   "Ministry of Health", 
   "Ministry of Education",
   "Ministry of Foreign Affairs"
 ];
-
+ */
 const dataTypes = [
   "Citizen Demographics",
   "Health Records",
@@ -66,69 +67,156 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
     supervisorApproval: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [targetMinistryOptions, setTargetMinistryOptions] = useState<string[]>([]);
+  const [dataTypes,setDataTypes] = useState<string[]>([]);
+  //authed user info from session storage
+  const currentUserId = localStorage.getItem("auth_token") || "user-123"+1;
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+useEffect(() => {
+  //pull target ministries from localhost:4000/ministries/api/ministry use fetch 
+const fetchMinistries = async () => {
+  try {
+      const response = await fetch('http://localhost:4000/ministries/api/ministry');
+    const data = await response.json();
+    if (response.ok) {
+      setTargetMinistryOptions(data.ministries)
+      return data.ministries; // Assuming the API returns an array of ministries   
+    } 
+    console.log('no data returned')
+  return data
+  } catch (error) {
+    console.error('Error fetching ministries:', error);
+  }
+}
 
-    // Validation
-    if (!formData.targetMinistry || !formData.dataType || !formData.purpose || !formData.justification) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      setIsSubmitting(false);
-      return;
+
+//fetch ministries on component mount
+fetchMinistries().then(data => console.log(data));
+  
+
+//fetch data types from localhost:4000/data-types/api/
+const fetchDataTypes = async ()=>{
+  try {
+    const response = await fetch('http://localhost:4000/data-types/api/');
+    const dataTypes = await response.json();
+    if (response.ok) {
+      setDataTypes(dataTypes.data)
+      console.log("data types from api", dataTypes.data);
+      return dataTypes.data; // Assuming the API returns an array of data types   
     }
+    
+  } catch (error) {
+     console.error('Error fetching data types:', error);
+  }
+}
+fetchDataTypes().then(data => console.log("data types", data));
+//setDataTypes(dataTypesFromApi)
+  
+},[])
 
-    if (!formData.supervisorApproval) {
-      toast({
-        title: "Authorization Required",
-        description: "Supervisor approval is required for data requests",
-        variant: "destructive"
-      });
-      setIsSubmitting(false);
-      return;
-    }
+console.log("target ministries", targetMinistryOptions);
 
-    // Simulate API call
-    setTimeout(() => {
-      const requestId = `REQ-${Date.now().toString().slice(-6)}`;
-      
-      toast({
-        title: "Request Submitted Successfully",
-        description: `Your request has been submitted with ID: ${requestId}`,
-      });
 
-      onSubmit({
-        ...formData,
-        id: requestId,
-        requestingMinistry: currentMinistry,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-      });
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-      // Reset form
-      setFormData({
-        targetMinistry: "",
-        dataType: "",
-        recordIds: "",
-        purpose: "",
-        justification: "",
-        urgency: "medium", 
-        retentionPeriod: "30",
-        dataSharing: false,
-        legalBasis: "",
-        requestorName: "",
-        requestorPosition: "",
-        supervisorApproval: false
-      });
+  // Validation
+  if (!formData.targetMinistry || !formData.dataType || !formData.purpose || !formData.justification) {
+    toast({
+      title: "Validation Error",
+      description: "Please fill in all required fields",
+      variant: "destructive",
+    });
+    setIsSubmitting(false);
+    return;
+  }
 
-      setIsSubmitting(false);
-    }, 1500);
-  };
+  if (!formData.supervisorApproval) {
+    toast({
+      title: "Authorization Required",
+      description: "Supervisor approval is required for data requests",
+      variant: "destructive",
+    });
+    setIsSubmitting(false);
+    return;
+  }
+
+  try {
+    const requestId = `REQ-${Date.now()}`;
+
+    // Map frontend formData to DB fields
+    const payload = {
+      id: requestId,
+      requesting_ministry_id:2, // replace with actual ID from session
+      target_ministry_id: parseInt(formData.targetMinistry), // ID of target ministry
+      requested_by: 2, // replace with actual user ID from session
+      data_type_id: parseInt(formData.dataType), // ID of selected data type
+      specific_record_ids: formData.recordIds || null,
+      purpose: formData.purpose,
+      justification: formData.justification,
+      legal_basis: formData.legalBasis || null,
+      urgency: formData.urgency,
+      retention_period_days: parseInt(formData.retentionPeriod),
+      data_sharing_acknowledged: formData.dataSharing,
+      supervisor_approved: formData.supervisorApproval,
+      requestor_name: formData.requestorName,
+      requestor_position: formData.requestorPosition,
+    };
+
+    // Call your API
+   const response = await fetch("http://localhost:4000/data-requests/api/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${currentUserId}`, // replace with real token
+  },
+  body: JSON.stringify(payload),
+});
+
+if (!response.ok) {
+  // Try to read text in case it's not JSON
+  const text = await response.text();
+  throw new Error(text || "Failed to submit request");
+}
+
+const data = await response.json();
+
+    // Reset form
+    setFormData({
+      targetMinistry: "",
+      dataType: "",
+      recordIds: "",
+      purpose: "",
+      justification: "",
+      urgency: "medium",
+      retentionPeriod: "30",
+      dataSharing: false,
+      legalBasis: "",
+      requestorName: "",
+      requestorPosition: "",
+      supervisorApproval: false,
+    });
+
+    toast({
+      title: "Request Submitted",
+      description:data.message || "Request submitted successfully",
+      variant: "success",
+    });
+    //navigator('/')
+
+    setIsSubmitting(false);
+  } catch (error) {
+    toast({
+      title: "Network Error",
+      description: error instanceof Error ? error.message : "An error occurred",
+      variant: "destructive",
+    });
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -156,31 +244,54 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="targetMinistry">Target Ministry *</Label>
-                <Select
+      <Select
+  value={formData.targetMinistry}
+  onValueChange={(value) =>
+    setFormData((prev) => ({ ...prev, targetMinistry: value }))
+  }
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a ministry" />
+  </SelectTrigger>
+  <SelectContent>
+    {targetMinistryOptions
+      .filter((ministry) => ministry.name !== currentMinistry) // 👈 filter first
+      .map((ministry) => (                             // 👈 then map
+        <SelectItem key={ministry.id} value={ministry.id}>
+          {ministry.name}
+        </SelectItem>
+      ))}
+  </SelectContent>
+</Select>
+
+               {/*<Select
                   value={formData.targetMinistry}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, targetMinistry: value }))}
                   required
                 >
+                  
                   <SelectTrigger>
                     <SelectValue placeholder="Select ministry to request from" />
                   </SelectTrigger>
                   <SelectContent>
-                    {targetMinistries
-                      .filter(ministry => ministry !== currentMinistry)
-                      .map((ministry) => (
-                        <SelectItem key={ministry} value={ministry}>
-                          {ministry}
-                        </SelectItem>
-                      ))}
+                   {targetMinistryOptions
+                  .filter(ministry => ministry !== currentMinistry)
+                  .map((ministry) => (
+                    <SelectItem key={ministry.id} value={ministry}>
+                      {ministry}
+                    </SelectItem>
+                  ))} 
                   </SelectContent>
-                </Select>
+                </Select> */}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="dataType">Data Type *</Label>
                 <Select
                   value={formData.dataType}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, dataType: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, dataType: value }))
+                  }
                   required
                 >
                   <SelectTrigger>
@@ -188,12 +299,13 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
                   </SelectTrigger>
                   <SelectContent>
                     {dataTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
+                      <SelectItem key={type.id} value={type.id.toString()}>
+                        {type.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+
               </div>
             </div>
 
@@ -378,6 +490,7 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
             type="submit"
             size="lg"
             disabled={isSubmitting}
+            
             className="bg-gradient-to-r from-primary to-primary-hover min-w-48"
           >
             {isSubmitting ? (

@@ -2,6 +2,7 @@ import { authService } from './authService';
 
 export interface AuditLog {
   id?: string;
+  user_id?: string
   timestamp?: string;
   user?: string;
   ministry?: string;
@@ -29,6 +30,8 @@ class AuditLogService {
       ...authService.getAuthHeader(),
     };
   }
+
+  
 
   async getAllAuditLogs(): Promise<AuditLogResponse> {
     try {
@@ -86,8 +89,12 @@ class AuditLogService {
     }
   }
 
+  
+
   async createAuditLog(logData: AuditLog): Promise<AuditLogResponse> {
     try {
+
+      
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'POST',
         headers: this.getHeaders(),
