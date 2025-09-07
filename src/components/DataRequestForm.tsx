@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import {auditLogService} from "@/services/auditLogService"
 import { 
   FileText, 
   Send, 
@@ -20,8 +21,6 @@ import {
   Database
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Ministry } from "@/services/ministryService";
-import { auditDataRequest } from "@/utils/auditLogger";
 
 interface DataRequestFormProps {
   currentMinistry: string;
@@ -69,7 +68,7 @@ export const DataRequestForm = ({ currentMinistry, onSubmit }: DataRequestFormPr
     supervisorApproval: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [targetMinistryOptions, setTargetMinistryOptions] = useState<Ministry[]>([]);
+  const [targetMinistryOptions, setTargetMinistryOptions] = useState<string[]>([]);
   const [dataTypes,setDataTypes] = useState<string[]>([]);
   //authed user info from session storage
   const currentUserId = localStorage.getItem("auth_token") || "user-123"+1;
@@ -82,9 +81,9 @@ const fetchMinistries = async () => {
       const response = await fetch('http://localhost:4000/ministries/api/ministry');
     const data = await response.json();
     if (response.ok) {
-      setTargetMinistryOptions(data || [])
-      return data || []; // Assuming the API returns an array of ministries   
-    }
+      setTargetMinistryOptions(data.ministries)
+      return data.ministries; // Assuming the API returns an array of ministries   
+    } 
     console.log('no data returned')
   return data
   } catch (error) {
@@ -147,13 +146,13 @@ console.log("target ministries", targetMinistryOptions);
 
   try {
     const requestId = `REQ-${Date.now()}`;
-
+    const requestBy = localStorage.getItem('loggedInMinistryId')
     // Map frontend formData to DB fields
     const payload = {
       id: requestId,
-      requesting_ministry_id:2, // replace with actual ID from session
+      requesting_ministry_id:requestBy, // replace with actual ID from session
       target_ministry_id: parseInt(formData.targetMinistry), // ID of target ministry
-      requested_by: 2, // replace with actual user ID from session
+      requested_by: requestBy, // replace with actual user ID from session
       data_type_id: parseInt(formData.dataType), // ID of selected data type
       specific_record_ids: formData.recordIds || null,
       purpose: formData.purpose,
@@ -167,7 +166,26 @@ console.log("target ministries", targetMinistryOptions);
       requestor_position: formData.requestorPosition,
     };
 
-    // Call your API
+         const currentUser = localStorage.getItem("auth_user")
+         const token =  localStorage.getItem("auth_token")
+         console.log(currentUser)
+     auditLogService.createAuditLog( {
+             user_id: currentUser?.id,
+             user_email: currentUser?.email,
+             ministry_id: currentUser?.ministry_id,
+             action: "data_request",
+             resource: formData.purpose,
+             //status: formData.status || 'pending',
+            // ip_address: userIP,
+             user_agent: navigator.userAgent,
+             session_id: token?.substring(0, 20), // Use token as session ID
+             details: formData.details,
+             risk_level: formData.urgency || 'low',
+             country: location.country,
+             city: location.city
+            })
+            
+    // Call your APIformData.justification
    const response = await fetch("http://localhost:4000/data-requests/api/", {
   method: "POST",
   headers: {
@@ -184,12 +202,6 @@ if (!response.ok) {
 }
 
 const data = await response.json();
-
-    // Create audit log for data request
-    await auditDataRequest(
-      data.id || 'unknown',
-      formData.targetMinistry
-    );
 
     // Reset form
     setFormData({
@@ -210,7 +222,7 @@ const data = await response.json();
     toast({
       title: "Request Submitted",
       description:data.message || "Request submitted successfully",
-      variant: "default",
+      variant: "success",
     });
     //navigator('/')
 
@@ -263,9 +275,9 @@ const data = await response.json();
   </SelectTrigger>
   <SelectContent>
     {targetMinistryOptions
-      .filter((ministry) => ministry.name !== currentMinistry)
-      .map((ministry) => (
-        <SelectItem key={ministry.id} value={ministry.id.toString()}>
+      .filter((ministry) => ministry.name !== currentMinistry) // 👈 filter first
+      .map((ministry) => (                             // 👈 then map
+        <SelectItem key={ministry.id} value={ministry.id}>
           {ministry.name}
         </SelectItem>
       ))}
@@ -306,9 +318,9 @@ const data = await response.json();
                     <SelectValue placeholder="Select type of data needed" />
                   </SelectTrigger>
                   <SelectContent>
-                    {dataTypes.map((type, index) => (
-                      <SelectItem key={index} value={type}>
-                        {type}
+                    {dataTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id.toString()}>
+                        {type.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

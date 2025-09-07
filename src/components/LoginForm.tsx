@@ -14,35 +14,21 @@ interface LoginFormProps {
 }
 
 
-// change if needed in future
-/* const ministries = [react-router-dom
-  "Ministry of Home Affairs",
-  "Ministry of Health",
-  "Ministry of Education",
-  "Ministry of Foreign Affairs"
-]; */
-
-
-// replace if needed in future
-/* const roles = [
-  "Admin",
-  "Officer", 
-  "Viewer"
-]; */
 
 localStorage.setItem
 
-//get authed user from localstorage
+/* //get authed user from localstorage
 const authUser = localStorage.getItem('auth_user');
 const parsedAuthUser =   authUser ? JSON.parse(authUser) : null;
 //console.log('Authenticated User:', parsedAuthUser.user.full_name);
 
-
+ */
 
 export const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [formData, setFormData] = useState<LoginCredentials>({
     email: "",
     password: "",
+    
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,11 +49,13 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
 
     try {
       const response = await authService.login(formData);
-      
+       console.log("response" , response.user.user.full_name)
+        localStorage.setItem("loggedInMinistryId", response.user.user.ministry_id);
+        localStorage.setItem("loggedInRoleId", response.user.user.role_id);
       if (response.success && response.user) {
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${parsedAuthUser.user.full_name}`,
+          description: `Welcome back, ${response.user.user.full_name}`,
         });
         onLogin(response.user);
         navigate('/');

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { authService } from '@/services/authService';
 import { User, Mail, Phone, Building, Users, Save } from 'lucide-react';
+import { Header } from './Header';
 
 interface UserProfile {
   id: string;
@@ -100,6 +101,8 @@ export const ProfileSettings = () => {
   };
 
   return (
+    <>
+       <Header/>
     <div className="max-w-2xl mx-auto p-6">
       <Card>
         <CardHeader>
@@ -220,6 +223,6 @@ export const ProfileSettings = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div></>
   );
 };

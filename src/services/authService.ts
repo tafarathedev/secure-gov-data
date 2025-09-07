@@ -37,6 +37,9 @@ class AuthService {
   private baseUrl = 'http://localhost:4000/auth';
   private tokenKey = 'auth_token';
   private userKey = 'auth_user';
+  private ministryKey = "loggedInMinistryId"
+  private roleKey = "loggedinRoleId"
+
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {

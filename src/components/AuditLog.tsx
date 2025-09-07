@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,87 +16,24 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import { format } from "date-fns";
 import { AuditDetailsModal } from "./AuditDetailsModal";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
 
 interface AuditEntry {
   id: string;
   timestamp: string;
-  user: string;
-  ministry: string;
-  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download' | 'create' | 'update' | 'delete' | 'signup' | 'logout';
-  resource: string;
+  user?: string;
+  ministry?: string;
+  action: 'login' | 'data_request' | 'data_access' | 'approval' | 'rejection' | 'download';
+  resource?: string;
   status: 'success' | 'failed' | 'pending';
-  ipAddress: string;
-  details: string;
+  ipAddress?: string;
+  details?: string;
   riskLevel: 'low' | 'medium' | 'high';
-  userAgent?: string;
-  country?: string;
-  city?: string;
 }
 
-const mockAuditData: AuditEntry[] = [
-  {
-    id: "AUD-001",
-    timestamp: "2024-01-10 14:23:45",
-    user: "john.doe@moha.gov",
-    ministry: "Ministry of Home Affairs",
-    action: "data_access",
-    resource: "Citizen Records DB",
-    status: "success",
-    ipAddress: "192.168.1.100",
-    details: "Accessed citizen health records for contact tracing - Request ID: REQ-001",
-    riskLevel: "medium"
-  },
-  {
-    id: "AUD-002", 
-    timestamp: "2024-01-10 14:15:32",
-    user: "jane.smith@moh.gov",
-    ministry: "Ministry of Health",
-    action: "data_request",
-    resource: "Home Affairs Data",
-    status: "pending",
-    ipAddress: "192.168.2.50",
-    details: "Requested citizen health records for COVID-19 contact tracing",
-    riskLevel: "high"
-  },
-  {
-    id: "AUD-003",
-    timestamp: "2024-01-10 13:45:12",
-    user: "admin@mofa.gov",
-    ministry: "Ministry of Foreign Affairs",
-    action: "login",
-    resource: "Portal Access",
-    status: "success",
-    ipAddress: "192.168.3.75",
-    details: "Successful authentication to IMDES portal",
-    riskLevel: "low"
-  },
-  {
-    id: "AUD-004",
-    timestamp: "2024-01-10 13:30:22",
-    user: "bob.wilson@moe.gov",
-    ministry: "Ministry of Education",
-    action: "approval",
-    resource: "Data Request REQ-002",
-    status: "success",
-    ipAddress: "192.168.4.120",
-    details: "Approved data request for student demographics",
-    riskLevel: "low"
-  },
-  {
-    id: "AUD-005",
-    timestamp: "2024-01-10 12:15:45",
-    user: "unauthorized.user@external.com",
-    ministry: "Unknown",
-    action: "login",
-    resource: "Portal Access",
-    status: "failed",
-    ipAddress: "203.45.67.89",
-    details: "Failed login attempt - Invalid credentials",
-    riskLevel: "high"
-  }
-];
+
 
 export const AuditLog = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -106,48 +43,64 @@ export const AuditLog = () => {
   const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const { logs, loading } = useAuditLogs();
+  const [ministries, setMinistries] = useState([])  
 
   const handleViewDetails = (entry: AuditEntry) => {
     setSelectedEntry(entry);
     setIsDetailsModalOpen(true);
   };
+const filteredAuditData = logs.filter((entry) => {
+  const search = searchTerm.toLowerCase();
 
-  // Convert AuditLog to AuditEntry format
-  const auditEntries: AuditEntry[] = logs.map(log => ({
-    id: log.id || '',
-    timestamp: log.timestamp || new Date().toISOString(),
-    user: log.user_email || '',
-    ministry: log.ministry_id ? `Ministry ID: ${log.ministry_id}` : '',
-    action: log.action,
-    resource: log.resource,
-    status: log.status || 'success',
-    ipAddress: log.ip_address || '',
-    details: log.details,
-    riskLevel: log.risk_level || 'low',
-    userAgent: log.user_agent,
-    country: log.country,
-    city: log.city
-  }));
+  const safe = (value: unknown) => String(value ?? "").toLowerCase();
 
-  const filteredAuditData = auditEntries.filter(entry => {
-    const matchesSearch = entry.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.ministry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.details.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesAction = actionFilter === "all-actions" || entry.action === actionFilter;
-    const matchesMinistry = ministryFilter === "all-ministries" || 
-                           entry.ministry.toLowerCase().includes(ministryFilter.toLowerCase());
-    const matchesRisk = riskFilter === "all-risk" || entry.riskLevel === riskFilter;
+  const matchesSearch =
+    safe(entry.user_email).includes(search) ||
+    safe(entry.ministry_id).includes(search) ||
+    safe(entry.resource).includes(search) ||
+    safe(entry.details).includes(search);
 
-    return matchesSearch && matchesAction && matchesMinistry && matchesRisk;
-  });
+  const matchesAction =
+    actionFilter === "all-actions" || entry.action === actionFilter;
 
+  const matchesMinistry =
+    ministryFilter === "all-ministries" ||
+    safe(entry.ministry_id).includes(ministryFilter.toLowerCase());
+
+  const matchesRisk =
+    riskFilter === "all-risk" || entry.risk_level === riskFilter;
+
+  return matchesSearch && matchesAction && matchesMinistry && matchesRisk;
+});
+
+
+useEffect(()=>{
+    fetch("http://localhost:4000/ministries/api/ministry")
+  .then(res => res.json()) // <-- run it
+  .then(data => {
+    console.log(data.ministries)
+    setMinistries(data.ministries);
+  })
+  .catch(err => console.error("Error fetching ministries:", err));
+
+return console.log('logs ministries' , ministries)
+ 
+
+},[])
+ //Utitlity Ministry
+ // Utility: map ministry ID to name
+  const getMinistryName = (id: number) => {
+  const ministry = ministries.find((m: any) => m.id === id);
+  return ministry ? ministry.name : "Unknown";
+};
+ 
+
+  console.log("filtered" , filteredAuditData)
   const exportAuditLogs = () => {
     const csvContent = [
       "ID,Timestamp,User,Ministry,Action,Resource,Status,IP Address,Risk Level,Details",
-      ...auditEntries.map(entry => 
-        `"${entry.id}","${entry.timestamp}","${entry.user}","${entry.ministry}","${entry.action}","${entry.resource}","${entry.status}","${entry.ipAddress}","${entry.riskLevel}","${entry.details}"`
+      ...logs.map(entry => 
+        `"${entry.id}","${entry.timestamp}","${entry.user_emial}","${entry.ministry_id}","${entry.action}","${entry.resource}","${entry.status}","${entry.ipAddress}","${entry.riskLevel}","${entry.details}"`
       )
     ].join('\n');
     
@@ -301,15 +254,20 @@ export const AuditLog = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-2">
                     <Badge variant="outline">{entry.id}</Badge>
-                    <Badge variant={getStatusColor(entry.status) as any}>
-                      {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
-                    </Badge>
-                    <Badge variant={getRiskColor(entry.riskLevel) as any}>
-                      {entry.riskLevel.charAt(0).toUpperCase() + entry.riskLevel.slice(1)} Risk
-                    </Badge>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {entry.timestamp}
+                  <Badge variant={getStatusColor(entry.status) as any}>
+                  {String(entry.status || "")
+                    .charAt(0)
+                    .toUpperCase() + String(entry.status || "").slice(1)}
+                </Badge>
+
+                <Badge variant={getRiskColor(entry.risk_level) as any}>
+                  {String(entry.risk_level || "")
+                    .charAt(0)
+                    .toUpperCase() + String(entry.risk_level || "").slice(1)} Risk
+                </Badge>
+                   <div className="flex items-center text-xs text-muted-foreground">
+                              <Clock className="mr-1 h-3 w-3" />
+                              {format(new Date(entry.timestamp), "PPpp")}    
                     </div>
                   </div>
                   
@@ -318,10 +276,10 @@ export const AuditLog = () => {
                       {entry.action.replace('_', ' ').charAt(0).toUpperCase() + entry.action.replace('_', ' ').slice(1)} - {entry.resource}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      <strong>User:</strong> {entry.user} | <strong>Ministry:</strong> {entry.ministry}
+                      <strong>User:</strong> {entry.user_email} | <strong>Ministry:</strong> {getMinistryName(entry.ministry_id)}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      <strong>IP Address:</strong> {entry.ipAddress} | <strong>Location:</strong> {entry.city}, {entry.country}
+                      <strong>IP Address:</strong> {entry.ip_address}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {entry.details}

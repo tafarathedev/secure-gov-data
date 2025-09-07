@@ -73,19 +73,26 @@ export const Dashboard = ({ onNewRequest }: DashboardProps) => {
   const [rejectedRequests, setRejectedRequests] = useState([]);
   const [ministries, setMinistries] = useState([]);
  const [dataTypes,setDataTypes] = useState<any[]>([]);
-
+ //logged in ministry
+ const loggedInMinistryId = Number(localStorage.getItem("ministry_id"));
 //fetch data requests from backend
-const baseURI = "http://localhost:4000/data-requests/api";
+const baseURI = "http://localhost:4000/data-requests/api/";
 
 useEffect(()=>{
   //fetched requests
 async function fetchrequests() {
+  const token = localStorage.getItem("auth_token");
   try {
-    const response = await fetch(`${baseURI}/`);
+  const response = await fetch(`${baseURI}/`, {
+  headers: {
+    "Authorization": `Bearer ${token}`,
+  }
+});
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
    const data =   await response.json();
+   console.log("req data" , data)
     setRequests(data.data);
     return data
   } catch (error) {
@@ -219,10 +226,14 @@ const chartConfig = {
 
 
   console.log("data requests",requests);
-  const handleViewDetails = (request: DataRequest) => {
-    setSelectedRequest(request);
-    setIsDetailsModalOpen(true);
-  };
+const handleViewDetails = (request: DataRequest) => {
+
+
+  setSelectedRequest(request);
+  setIsDetailsModalOpen(true);
+};
+
+
 
 
 const handleApprove = async (requestId: string) => {
@@ -613,7 +624,7 @@ const handleApprove = async (requestId: string) => {
         
         <CardContent>
           <div className="space-y-4">
-            {filteredRequests.map((request) => (
+            { filteredRequests.map((request) => (
               <div
                 key={request.id}
                 className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
@@ -647,7 +658,7 @@ const handleApprove = async (requestId: string) => {
                 </div>
                 
                 <div  className="flex space-x-2">
-                  {request.status === 'pending'? (
+                  {request.status === 'pending' && request.target_ministry_id !== loggedInMinistryId? (
                     <>
                       <Button 
                         size="sm" 

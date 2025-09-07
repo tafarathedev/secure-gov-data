@@ -63,6 +63,7 @@ class AuditLogService {
     }
   }
   async getAllAuditLogs(): Promise<AuditLogResponse> {
+    
     try {
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'GET',
@@ -80,7 +81,7 @@ class AuditLogService {
 
       return {
         success: true,
-        data: data,
+        data: data.data ,
       };
     } catch (error) {
       return {
@@ -123,10 +124,10 @@ class AuditLogService {
   async createAuditLog(logData: Partial<AuditLog>): Promise<AuditLogResponse> {
     try {
       // Get current user info
-      const currentUser = authService.getUser();
+      const currentUser = authService.getUser().user;
       const userIP = await this.getUserIP();
       const location = await this.getUserLocation(userIP);
-      
+      console.log("current User" , currentUser)
       // Prepare the audit log data to match backend structure
       const auditLogPayload = {
         user_id: currentUser?.id,
@@ -145,7 +146,7 @@ class AuditLogService {
         city: location.city
       };
 
-      console.log('Creating audit log:', auditLogPayload);
+      /* console.log('Creating audit log:', auditLogPayload); */
       
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'POST',

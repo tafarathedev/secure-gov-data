@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Clock
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface AuditEntry {
   id: string;
@@ -21,7 +22,7 @@ interface AuditEntry {
   status: 'success' | 'failed' | 'pending';
   ipAddress: string;
   details: string;
-  riskLevel: 'low' | 'medium' | 'high';
+  risk_level: 'low' | 'medium' | 'high';
 }
 
 interface AuditDetailsModalProps {
@@ -31,7 +32,34 @@ interface AuditDetailsModalProps {
 }
 
 export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalProps) => {
-  if (!entry) return null;
+const [ministries, setMinistries] = useState([])  
+console.log(" entries" , entry)
+    if (!entry) return null;
+
+
+
+useEffect(()=>{
+    fetch("http://localhost:4000/ministries/api/ministry")
+  .then(res => res.json()) // <-- run it
+  .then(data => {
+    console.log(data.ministries)
+    setMinistries(data.ministries);
+  })
+  .catch(err => console.error("Error fetching ministries:", err));
+
+return console.log('logs ministries' , ministries)
+ 
+
+},[])
+ //Utitlity Ministry
+ // Utility: map ministry ID to name
+  const getMinistryName = (id: number) => {
+  const ministry = ministries.find((m: any) => m.id === id);
+  return ministry ? ministry.name : "Unknown";
+};
+ 
+console.log(entry.ministry_id)
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -85,10 +113,10 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
           <div className="flex items-center space-x-2">
             <Badge variant="outline">{entry.id}</Badge>
             <Badge variant={getStatusColor(entry.status) as any}>
-              {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+              {String(entry.status || "").charAt(0).toUpperCase() + String(entry.status || "").slice(1)}
             </Badge>
-            <Badge variant={getRiskColor(entry.riskLevel) as any}>
-              {entry.riskLevel.charAt(0).toUpperCase() + entry.riskLevel.slice(1)} Risk
+            <Badge variant={getRiskColor(entry.risk_level) as any}>
+              {String(entry.risk_level).charAt(0).toUpperCase() + String(entry.risk_level).slice(1)} Risk
             </Badge>
           </div>
 
@@ -101,7 +129,7 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
                 <User className="h-4 w-4" />
                 <span>User</span>
               </div>
-              <p className="font-medium">{entry.user}</p>
+              <p className="font-medium">{entry.user_email}</p>
             </div>
 
             <div className="space-y-2">
@@ -109,7 +137,7 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
                 <Building2 className="h-4 w-4" />
                 <span>Ministry</span>
               </div>
-              <p className="font-medium">{entry.ministry}</p>
+              <p className="font-medium">{getMinistryName(entry.ministry_id) }</p>
             </div>
 
             <div className="space-y-2">
@@ -133,7 +161,7 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
                 <Globe className="h-4 w-4" />
                 <span>IP Address</span>
               </div>
-              <p className="font-medium">{entry.ipAddress}</p>
+              <p className="font-medium">{entry.ip_address}</p>
             </div>
 
             <div className="space-y-2">
@@ -156,4 +184,6 @@ export const AuditDetailsModal = ({ entry, isOpen, onClose }: AuditDetailsModalP
       </DialogContent>
     </Dialog>
   );
+
+
 };
